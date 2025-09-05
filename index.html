@@ -79,8 +79,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, query, addDoc, where, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-
+        import { getFirestore, doc, setDoc, onSnapshot, collection, query, where, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        
         // Hardcoded Firebase configuration from user's request
         const firebaseConfig = {
             apiKey: "AIzaSyD_wua7IXkOgDQ08rJ-UmLBVyEoDkd5z40",
@@ -92,9 +92,9 @@
             measurementId: "G-7SFR36ZJYF"
         };
         
-        // Global variables provided by the environment, which MUST be used.
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Use a default appId for GitHub Pages
+        const appId = 'default-app-id';
+        const initialAuthToken = null;
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -144,15 +144,8 @@
             }
         });
 
-        // Initial custom token sign-in
-        if (initialAuthToken) {
-            await signInWithCustomToken(auth, initialAuthToken).catch(e => {
-                console.error("Custom token sign-in failed:", e);
-                signInAnonymously(auth); // Fallback to anonymous sign-in
-            });
-        } else {
-            await signInAnonymously(auth);
-        }
+        // Initial custom token sign-in is not relevant for GitHub Pages, so we start with anonymous sign-in.
+        await signInAnonymously(auth);
 
         function getProjectsPath() {
             return `artifacts/${appId}/public/data/sites`;
