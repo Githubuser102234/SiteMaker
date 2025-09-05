@@ -64,6 +64,7 @@
             <div class="flex justify-between items-center mt-4">
                 <a id="view-site-btn" target="_blank" class="bg-purple-600 text-white px-4 py-2 rounded-full font-medium hover:bg-purple-700 transition duration-300 whitespace-nowrap">View Site</a>
                 <div class="flex gap-2">
+                    <button id="delete-file-btn" class="px-4 py-2 rounded-full bg-red-600 text-white font-medium hover:bg-red-700 transition duration-300">Delete File</button>
                     <button id="save-file-btn" class="px-6 py-2 rounded-full bg-blue-600 text-white font-medium hover:bg-blue-700 transition duration-300">Save</button>
                     <button id="cancel-edit" class="px-4 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-100 transition duration-300">Cancel</button>
                 </div>
@@ -74,9 +75,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, query, where, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, query, where, getDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         
-        // Hardcoded Firebase configuration. Make sure to replace with your actual credentials.
         const firebaseConfig = {
             apiKey: "AIzaSyD_wua7IXkOgDQ08rJ-UmLBVyEoDkd5z40",
             authDomain: "sitemaker-8dc01.firebaseapp.com",
@@ -87,13 +87,11 @@
             measurementId: "G-7SFR36ZJYF"
         };
         
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // Get references to all necessary UI elements
         const authButton = document.getElementById('auth-button');
         const userDisplay = document.getElementById('user-display');
         const appContainer = document.getElementById('app-container');
@@ -111,12 +109,12 @@
         const saveFileBtn = document.getElementById('save-file-btn');
         const cancelEditBtn = document.getElementById('cancel-edit');
         const viewSiteBtn = document.getElementById('view-site-btn');
+        const deleteFileBtn = document.getElementById('delete-file-btn'); // New reference
 
         let currentProjectId = null;
         let currentFiles = {};
         let currentUserId = null;
 
-        // Firebase Auth State Listener
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUserId = user.uid;
@@ -136,12 +134,10 @@
             }
         });
 
-        // Use a consistent path for the Firestore collection
         function getProjectsPath() {
             return `sites`;
         }
 
-        // Real-time listener for user projects
         function setupProjectListener() {
             if (!currentUserId) return;
             const projectsRef = collection(db, getProjectsPath());
@@ -177,7 +173,6 @@
             });
         }
 
-        // Modal Handlers
         createProjectBtn.addEventListener('click', () => {
             createModal.classList.remove('hidden');
         });
@@ -190,14 +185,12 @@
             fileNameInput.value = '';
         });
 
-        // Create Project Form Submission
         createForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const projectName = document.getElementById('project-name').value.trim();
             if (!projectName) return;
 
             try {
-                // Generate a unique ID for the new project
                 const projectRef = doc(collection(db, getProjectsPath()));
                 const projectId = projectRef.id;
 
@@ -222,15 +215,13 @@
                 const newProject = {
                     name: projectName,
                     userId: currentUserId,
-                    files: initialFiles // Store as a direct object, not stringified JSON
+                    files: initialFiles
                 };
 
                 await setDoc(projectRef, newProject);
                 createModal.classList.add('hidden');
                 createForm.reset();
                 console.log("Project created successfully!");
-
-                // Open the edit modal for the newly created project
                 openEditModal(projectId, newProject);
 
             } catch (e) {
@@ -238,19 +229,16 @@
             }
         });
 
-        // Open Edit Modal
         async function openEditModal(projectId, projectData) {
             currentProjectId = projectId;
             editModalTitle.textContent = `Editing: ${projectData.name}`;
             currentFiles = projectData.files;
             
-            // Set up link for viewer
             viewSiteBtn.href = `./viewer.html?site=${projectId}`;
             
             renderFileTabs();
             editModal.classList.remove('hidden');
             
-            // Load the index.html file content by default
             if (currentFiles['index.html']) {
                 fileNameInput.value = 'index.html';
                 fileContentTextarea.value = currentFiles['index.html'];
@@ -260,7 +248,6 @@
             }
         }
 
-        // Render file tabs
         function renderFileTabs() {
             fileTabsContainer.innerHTML = '';
             Object.keys(currentFiles).forEach(filename => {
@@ -271,27 +258,25 @@
                 tab.addEventListener('click', () => {
                     fileNameInput.value = filename;
                     fileContentTextarea.value = currentFiles[filename];
-                    renderFileTabs(); // Re-render to update active tab
+                    renderFileTabs();
                 });
                 fileTabsContainer.appendChild(tab);
             });
         }
 
-        // Add New File
         addFileBtn.addEventListener('click', () => {
             const fileName = fileNameInput.value.trim();
             if (!fileName || currentFiles[fileName]) {
                 console.error("Invalid file name or file already exists.");
                 return;
             }
-            currentFiles[fileName] = ''; // Initialize with empty string
-            fileContentTextarea.value = ''; // Clear textarea for new file
+            currentFiles[fileName] = '';
+            fileContentTextarea.value = '';
             renderFileTabs();
-            fileNameInput.value = fileName; // Set the input value
+            fileNameInput.value = fileName;
             fileContentTextarea.focus();
         });
 
-        // Save File
         saveFileBtn.addEventListener('click', async () => {
             if (!currentProjectId) return;
             const fileName = fileNameInput.value.trim();
@@ -301,20 +286,45 @@
                 return;
             }
             
-            // Update the in-memory files object
             currentFiles[fileName] = fileContent;
 
             try {
                 const projectRef = doc(db, getProjectsPath(), currentProjectId);
                 await setDoc(projectRef, { files: currentFiles }, { merge: true });
                 console.log("File saved successfully!");
-                renderFileTabs(); // Update tabs to reflect changes if a new file was saved
+                renderFileTabs();
             } catch (e) {
                 console.error("Error saving file:", e);
             }
         });
 
-        // Delete Project
+        // New Delete File Logic
+        deleteFileBtn.addEventListener('click', async () => {
+            const fileName = fileNameInput.value.trim();
+            if (!fileName) {
+                console.error("No file selected to delete.");
+                return;
+            }
+            if (fileName === 'index.html') {
+                alert("You cannot delete the main 'index.html' file.");
+                return;
+            }
+            if (confirm(`Are you sure you want to delete the file '${fileName}'?`)) {
+                try {
+                    delete currentFiles[fileName]; // Remove the file from the local object
+                    const projectRef = doc(db, getProjectsPath(), currentProjectId);
+                    await updateDoc(projectRef, { files: currentFiles });
+                    
+                    console.log(`File '${fileName}' deleted successfully!`);
+                    fileNameInput.value = 'index.html'; // Go back to index.html
+                    fileContentTextarea.value = currentFiles['index.html'];
+                    renderFileTabs();
+                } catch (e) {
+                    console.error("Error deleting file:", e);
+                }
+            }
+        });
+
         async function deleteProject(projectId) {
             if (!confirm("Are you sure you want to delete this project?")) {
                 return;
@@ -328,11 +338,9 @@
             }
         }
 
-        // Handle URL changes to load correct file
         fileNameInput.addEventListener('input', () => {
             renderFileTabs();
         });
-
     </script>
 </body>
 </html>
