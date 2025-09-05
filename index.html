@@ -102,6 +102,7 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
+        // Get references to all necessary UI elements
         const authButton = document.getElementById('auth-button');
         const userDisplay = document.getElementById('user-display');
         const appContainer = document.getElementById('app-container');
@@ -188,7 +189,10 @@
         }
 
         // Modal Handlers
-        createProjectBtn.addEventListener('click', () => createModal.classList.remove('hidden'));
+        // Fix: Ensure the event listener for createProjectBtn is properly attached.
+        createProjectBtn.addEventListener('click', () => {
+            createModal.classList.remove('hidden');
+        });
         cancelCreateBtn.addEventListener('click', () => createModal.classList.add('hidden'));
         cancelEditBtn.addEventListener('click', () => {
             editModal.classList.add('hidden');
