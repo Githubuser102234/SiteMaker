@@ -109,7 +109,7 @@
         const saveFileBtn = document.getElementById('save-file-btn');
         const cancelEditBtn = document.getElementById('cancel-edit');
         const viewSiteBtn = document.getElementById('view-site-btn');
-        const deleteFileBtn = document.getElementById('delete-file-btn'); // New reference
+        const deleteFileBtn = document.getElementById('delete-file-btn');
 
         let currentProjectId = null;
         let currentFiles = {};
@@ -234,7 +234,8 @@
             editModalTitle.textContent = `Editing: ${projectData.name}`;
             currentFiles = projectData.files;
             
-            viewSiteBtn.href = `./viewer.html?site=${projectId}`;
+            // Set up link for viewer, defaulting to index.html
+            viewSiteBtn.href = `./viewer.html?site=${projectId}&page=index.html`;
             
             renderFileTabs();
             editModal.classList.remove('hidden');
@@ -298,7 +299,6 @@
             }
         });
 
-        // New Delete File Logic
         deleteFileBtn.addEventListener('click', async () => {
             const fileName = fileNameInput.value.trim();
             if (!fileName) {
@@ -311,12 +311,12 @@
             }
             if (confirm(`Are you sure you want to delete the file '${fileName}'?`)) {
                 try {
-                    delete currentFiles[fileName]; // Remove the file from the local object
+                    delete currentFiles[fileName];
                     const projectRef = doc(db, getProjectsPath(), currentProjectId);
                     await updateDoc(projectRef, { files: currentFiles });
                     
                     console.log(`File '${fileName}' deleted successfully!`);
-                    fileNameInput.value = 'index.html'; // Go back to index.html
+                    fileNameInput.value = 'index.html';
                     fileContentTextarea.value = currentFiles['index.html'];
                     renderFileTabs();
                 } catch (e) {
@@ -338,9 +338,24 @@
             }
         }
 
-        fileNameInput.addEventListener('input', () => {
-            renderFileTabs();
-        });
+        // Event listener to update "View Site" button
+        // This is a new function to ensure the link is always current
+        const updateViewSiteLink = () => {
+            if (currentProjectId) {
+                const fileName = fileNameInput.value.trim();
+                if (fileName) {
+                    viewSiteBtn.href = `./viewer.html?site=${currentProjectId}&page=${encodeURIComponent(fileName)}`;
+                }
+            }
+        };
+
+        // Attach the new function to relevant events
+        fileNameInput.addEventListener('input', updateViewSiteLink);
+        fileNameInput.addEventListener('input', renderFileTabs); // Keep the original listener too
+
+        fileTabsContainer.addEventListener('click', updateViewSiteLink);
+        saveFileBtn.addEventListener('click', updateViewSiteLink);
+
     </script>
 </body>
 </html>
