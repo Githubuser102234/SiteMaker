@@ -30,6 +30,7 @@
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const siteId = urlParams.get('site');
+                const pageName = urlParams.get('page') || 'index.html'; // Get the requested page, or default to index.html
                 
                 if (!siteId) {
                     console.error("Error: No site ID provided in the URL.");
@@ -43,11 +44,18 @@
                 if (docSnap.exists()) {
                     const projectData = docSnap.data();
                     const files = projectData.files;
+                    let fileContent = files[pageName];
 
-                    if (files && files['index.html']) {
+                    if (fileContent) {
+                        // Display the requested file's content
+                        document.documentElement.innerHTML = fileContent;
+                    } else if (files['index.html']) {
+                        // Fallback to index.html if the requested page is not found
+                        console.warn(`Warning: Page '${pageName}' not found. Displaying 'index.html' instead.`);
                         document.documentElement.innerHTML = files['index.html'];
                     } else {
-                        console.error(`Error: 'index.html' not found for site '${siteId}'.`);
+                        // No index.html or requested page found
+                        console.error(`Error: The page '${pageName}' could not be found for site '${siteId}'.`);
                         document.body.innerHTML = '<h1>Page Not Found</h1><p>The main page for this site could not be found.</p>';
                     }
 
