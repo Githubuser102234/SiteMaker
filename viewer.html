@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background-color: #e5e7eb; }
+        iframe { width: 100%; height: calc(100vh - 56px); border: none; }
+    </style>
+</head>
+<body>
+    <div id="loader" class="fixed inset-0 flex justify-center items-center bg-white z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 border-solid"></div>
+    </div>
+
+    <header class="bg-gray-800 text-white p-4 flex items-center justify-between">
+        <a href="./index.html" class="text-white hover:text-gray-300 transition duration-300">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Site Builder
+        </a>
+        <h1 id="site-title" class="text-lg font-semibold">Loading...</h1>
+    </header>
+
+    <div id="content-container">
+        <iframe id="site-iframe"></iframe>
+    </div>
+
+    <div id="error-message" class="hidden fixed inset-0 flex flex-col justify-center items-center p-8 text-center">
+        <p class="text-3xl font-bold text-gray-800 mb-4">Error</p>
+        <p id="error-text" class="text-lg text-gray-600">The requested site could not be found.</p>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+        
+        // Hardcoded Firebase configuration from user's request
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_wua7IXkOgDQ08rJ-UmLBVyEoDkd5z40",
+            authDomain: "sitemaker-8dc01.firebaseapp.com",
+            projectId: "sitemaker-8dc01",
+            storageBucket: "sitemaker-8dc01.firebasestorage.app",
+            messagingSenderId: "816747054758",
+            appId: "1:816747054758:web:d369bc875fa4dda1eb5667",
+            measurementId: "G-7SFR36ZJYF"
+        };
+        
+        const appId = 'default-app-id';
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // UI elements
+        const siteTitle = document.getElementById('site-title');
+        const siteIframe = document.getElementById('site-iframe');
+        const loader = document.getElementById('loader');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        
+        // Function to display error message
+        const displayError = (message) => {
+            loader.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
+            errorText.textContent = message;
+        };
+        
+        // Function to load the site content
+        const loadSite = async () => {
+            try {
+                // Sign in anonymously to access public data
+                await signInAnonymously(auth);
+
+                // Get URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const siteName = urlParams.get('site');
+                let pageName = urlParams.get('page') || 'index.html';
+                
+                if (!siteName) {
+                    displayError("No site name provided in the URL.");
+                    return;
+                }
+
+                // Reference to the Firestore document
+                const projectRef = doc(db, `artifacts/${appId}/public/data/sites`, siteName);
+                const docSnap = await getDoc(projectRef);
+
+                if (docSnap.exists()) {
+                    const projectData = docSnap.data();
+                    const files = JSON.parse(projectData.files);
+
+                    siteTitle.textContent = projectData.name;
+                    let fileContent = files[pageName];
+
+                    if (!fileContent && pageName !== 'index.html') {
+                        // If the specific page isn't found, try to fall back to index.html
+                        fileContent = files['index.html'];
+                        if (fileContent) {
+                            pageName = 'index.html';
+                            console.warn(`Page '${urlParams.get('page')}' not found. Displaying 'index.html' instead.`);
+                        }
+                    }
+
+                    if (fileContent) {
+                        const blob = new Blob([fileContent], { type: 'text/html' });
+                        const url = URL.createObjectURL(blob);
+                        siteIframe.src = url;
+                    } else {
+                        displayError(`The page '${pageName}' could not be found for site '${siteName}'.`);
+                    }
+
+                } else {
+                    displayError(`Site '${siteName}' not found.`);
+                }
+            } catch (e) {
+                console.error("Error loading site:", e);
+                displayError("An unexpected error occurred while loading the site.");
+            } finally {
+                loader.classList.add('hidden');
+            }
+        };
+
+        window.onload = loadSite;
+
+    </script>
+</body>
+</html>
+
