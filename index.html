@@ -81,9 +81,19 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, query, addDoc, where, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
+        // Hardcoded Firebase configuration from user's request
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_wua7IXkOgDQ08rJ-UmLBVyEoDkd5z40",
+            authDomain: "sitemaker-8dc01.firebaseapp.com",
+            projectId: "sitemaker-8dc01",
+            storageBucket: "sitemaker-8dc01.firebasestorage.app",
+            messagingSenderId: "816747054758",
+            appId: "1:816747054758:web:d369bc875fa4dda1eb5667",
+            measurementId: "G-7SFR36ZJYF"
+        };
+        
         // Global variables provided by the environment, which MUST be used.
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // Initialize Firebase
