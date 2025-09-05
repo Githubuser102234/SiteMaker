@@ -8,7 +8,6 @@
 <body>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
         
         // Hardcoded Firebase configuration.
@@ -25,26 +24,19 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app);
 
         // Function to load and display the raw site content
         const loadRawSite = async () => {
             try {
-                // Sign in anonymously to access public data
-                await signInAnonymously(auth);
-
-                // Get URL parameters
                 const urlParams = new URLSearchParams(window.location.search);
                 const siteId = urlParams.get('site');
                 
                 if (!siteId) {
                     console.error("Error: No site ID provided in the URL.");
-                    // Display a simple message on the raw page
                     document.body.innerHTML = '<h1>Site Not Found</h1><p>Please return to the <a href="./index.html">Site Builder</a>.</p>';
                     return;
                 }
 
-                // Reference to the Firestore document
                 const projectRef = doc(db, 'sites', siteId);
                 const docSnap = await getDoc(projectRef);
 
@@ -53,7 +45,6 @@
                     const files = projectData.files;
 
                     if (files && files['index.html']) {
-                        // This is the key change: directly write the content to the document
                         document.documentElement.innerHTML = files['index.html'];
                     } else {
                         console.error(`Error: 'index.html' not found for site '${siteId}'.`);
